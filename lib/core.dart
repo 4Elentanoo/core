@@ -1,8 +1,5 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
 library;
 
-export 'src/core_base.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'src/model/assignment.dart';
+export 'src/validator/violation.dart';
+export 'src/validator/room_conflicts.dart';
