@@ -1,0 +1,185 @@
+Table training_group {
+  id integer [pk, increment]
+  name varchar [not null]
+  section_id integer [not null]
+  trainer_id integer [not null]
+  stage_id integer [not null]
+  max_students integer [not null]
+  is_active boolean [not null, default: true]
+}
+
+Table section {
+  id integer [pk, increment]
+  name varchar [not null]
+}
+
+Ref section_training_group: section.id <? training_group.section_id
+
+Table equipment { // Группа инвентаря
+  id integer [pk, increment]
+  name varchar [not null]
+}
+
+table item {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+  type_equipment_id integer [not null]
+  serial_number varchar [not null]
+  
+}
+
+ref equipment_item: equipment.id < item.type_equipment_id
+
+Table section_equipment {
+  section_id integer [not null]
+  equipment_id integer [not null]
+  date_install date [not null]
+  indexes {
+    (section_id, equipment_id) [pk]
+  }
+}
+
+Ref section_equipment: section.id < section_equipment.section_id
+Ref equipment_section: equipment.id < section_equipment.equipment_id
+
+Table room {
+  id integer [pk, increment]
+  name varchar [not null]
+  number integer
+  capacity integer [not null]
+}
+
+Table trainer {
+  id integer [pk, increment]
+  account_id integer [not null, unique]
+  category_id integer [not null]
+}
+
+Ref trainer_training_group: trainer.id < training_group.trainer_id
+
+Table trainer_availability {
+  trainer_id integer [not null]
+  slot_id integer [not null]
+  indexes {
+    (trainer_id, slot_id) [pk]
+  }
+}
+
+Ref trainer_trainer_availability: trainer.id < trainer_availability.trainer_id
+
+Table slot {
+  id integer [pk, increment]
+  start_time time [not null]
+  day_of_week smallint [not null]
+  indexes {
+    (day_of_week, start_time) [unique]
+  }
+}
+
+Ref slot_trainer_availability: slot.id < trainer_availability.slot_id
+
+Table stage {
+  id integer [pk, increment]
+  name varchar [not null]
+  lessons_per_week integer [not null]
+  min_category_id integer [not null]
+}
+
+Ref stage_training_group: stage.id < training_group.stage_id
+
+Table category_trainer {
+  id integer [pk, increment]
+  name varchar [not null]
+  trainer_id integer [not null]
+  category_id integer [not null]
+}
+
+ref trainer_category_trainer: trainer.id < category_trainer.trainer_id
+ref category_category_trainer: category.id < category_trainer.category_id
+
+Table category {
+  id integer [pk, increment]
+  name varchar [not null]
+}
+
+Table assignment {
+  id integer [pk, increment]
+  training_group_id integer [not null]
+  room_id integer [not null]
+  slot_id integer [not null]
+  indexes {
+    (room_id, slot_id) [unique]
+    (training_group_id, slot_id) [unique]
+  }
+}
+
+Ref group_assignment: training_group.id < assignment.training_group_id
+Ref room_assignment: room.id < assignment.room_id
+Ref slot_assignment: slot.id < assignment.slot_id
+
+
+table type_sport { // вид спорта
+  id integer [pk, increment]
+  name varchar [not null]
+  description varchar [not null]
+}
+
+table trainer_for_sport { // тренер по спорту
+  id integer [pk, increment]
+  type_sport_id integer [not null]
+  trainer_id integer  [not null]
+  date_assignment date [not null]
+}
+
+ref type_sport_to_trainer_for_sport: type_sport.id < trainer_for_sport.type_sport_id
+ref trainer_trsiner_for_sport: trainer.id < trainer_for_sport.trainer_id
+
+Ref trainer_category: trainer.category_id > category.id
+Ref category_stage: stage.min_category_id > category.id
+
+table account {
+  id integer [pk, increment]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  mail varchar [not null, unique]
+  phone varchar [not null, unique]
+  password_hash varchar [not null]
+}
+
+ref trainer_account: trainer.account_id - account.id
+
+table role  {
+  id integer [pk, increment]
+  name varchar [not null, unique]
+}
+
+table account_role {
+  account_id integer [not null]
+  role_id integer [not null]
+  indexes {
+    (account_id, role_id) [pk]
+  }
+}
+
+ref account_account_role: account.id < account_role.account_id
+ref account_role: role.id < account_role.role_id
+
+table student {
+  id integer [pk, increment]
+  training_group_id integer [not null]
+  parent_id integer
+  birth_year year
+  date_of_departure date
+}
+
+table student_group {
+  training_group_id integer [not null]
+  student_id integer [not null]
+  indexes {
+    (training_group_id, student_id) [pk]
+  }
+}
+
+ref ref_parent_student: student.parent_id >? account.id
+ref ref_student_group: student.id < student_group.student_id
