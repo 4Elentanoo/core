@@ -1,21 +1,17 @@
 Table training_group {
   id integer [pk, increment]
   name varchar [not null]
-  section_id integer [not null]
-  trainer_id integer [not null]
+  type_sport_id integer [not null]
   stage_id integer [not null]
   max_students integer [not null]
   is_active boolean [not null, default: true]
+  min_category_id integer [not null]
 }
 
-Table section {
-  id integer [pk, increment]
-  name varchar [not null]
-}
+Ref type_sport_training_group: type_sport.id <? training_group.type_sport_id
+Ref category_training_group: category.id < training_group.min_category_id
 
-Ref section_training_group: section.id <? training_group.section_id
-
-Table equipment { // Группа инвентаря
+Table equipment { // Вид инвентаря
   id integer [pk, increment]
   name varchar [not null]
 }
@@ -24,23 +20,33 @@ table item {
   id integer [pk, increment]
   name varchar
   description varchar
-  type_equipment_id integer [not null]
-  serial_number varchar [not null]
-  
+  equipment_id integer [not null]
+  inventory_number varchar [not null, unique]
 }
 
-ref equipment_item: equipment.id < item.type_equipment_id
+ref equipment_item: equipment.id < item.equipment_id
+
+table equipment_placement {
+  id integer [pk, increment]
+  item_id integer [not null]
+  room_id integer [not null]
+  date_install date [not null]
+  date_end date
+}
+
+ref item_placement: item.id < equipment_placement.item_id
+ref room_placement: room.id < equipment_placement.room_id
+
 
 Table section_equipment {
-  section_id integer [not null]
+  type_sport_id integer [not null]
   equipment_id integer [not null]
-  date_install date [not null]
   indexes {
-    (section_id, equipment_id) [pk]
+    (type_sport_id, equipment_id) [pk]
   }
 }
 
-Ref section_equipment: section.id < section_equipment.section_id
+Ref type_sport_section_equipment: type_sport.id < section_equipment.type_sport_id
 Ref equipment_section: equipment.id < section_equipment.equipment_id
 
 Table room {
@@ -53,10 +59,7 @@ Table room {
 Table trainer {
   id integer [pk, increment]
   account_id integer [not null, unique]
-  category_id integer [not null]
 }
-
-Ref trainer_training_group: trainer.id < training_group.trainer_id
 
 Table trainer_availability {
   trainer_id integer [not null]
@@ -83,46 +86,66 @@ Table stage {
   id integer [pk, increment]
   name varchar [not null]
   lessons_per_week integer [not null]
-  min_category_id integer [not null]
 }
 
 Ref stage_training_group: stage.id < training_group.stage_id
 
-Table category_trainer {
+Table trainer_category {
   id integer [pk, increment]
-  name varchar [not null]
   trainer_id integer [not null]
   category_id integer [not null]
+  assigned_at date [not null]
 }
 
-ref trainer_category_trainer: trainer.id < category_trainer.trainer_id
-ref category_category_trainer: category.id < category_trainer.category_id
+ref trainer_trainer_category: trainer.id < trainer_category.trainer_id
+ref trainer_category_category: category.id < trainer_category.category_id
 
 Table category {
   id integer [pk, increment]
   name varchar [not null]
+  level integer [not null, unique]
 }
 
 Table assignment {
   id integer [pk, increment]
-  training_group_id integer [not null]
+  group_trainer_id integer [not null]
   room_id integer [not null]
   slot_id integer [not null]
   indexes {
     (room_id, slot_id) [unique]
-    (training_group_id, slot_id) [unique]
+    (group_trainer_id, slot_id) [unique]
   }
 }
 
-Ref group_assignment: training_group.id < assignment.training_group_id
 Ref room_assignment: room.id < assignment.room_id
 Ref slot_assignment: slot.id < assignment.slot_id
+ref trainer_assignment: group_trainer.id < assignment.group_trainer_id
 
+table group_trainer {
+  id integer [pk, increment]
+  training_group_id integer [not null]
+  trainer_for_sport_id integer [not null]
+  start_date date [not null]
+  end_date date
+}
+
+table student_group {
+  id integer [pk, increment]
+  training_group_id integer [not null]
+  student_id integer [not null]
+  start_date date [not null]
+  end_date date
+}
+
+ref student_group_training_group: training_group.id < student_group.training_group_id
+ref ref_student_group: student.id < student_group.student_id
+ref group_trainer_for_training_group: trainer_for_sport.id < group_trainer.trainer_for_sport_id
+ref training_group_for_group_trainer: training_group.id < group_trainer.training_group_id
 
 table type_sport { // вид спорта
   id integer [pk, increment]
   name varchar [not null]
-  description varchar [not null]
+  description varchar
 }
 
 table trainer_for_sport { // тренер по спорту
@@ -133,14 +156,11 @@ table trainer_for_sport { // тренер по спорту
 }
 
 ref type_sport_to_trainer_for_sport: type_sport.id < trainer_for_sport.type_sport_id
-ref trainer_trsiner_for_sport: trainer.id < trainer_for_sport.trainer_id
-
-Ref trainer_category: trainer.category_id > category.id
-Ref category_stage: stage.min_category_id > category.id
+ref trainer_trainer_for_sport: trainer.id < trainer_for_sport.trainer_id
 
 table account {
   id integer [pk, increment]
-  first_name varchar [not null]
+  first_name varchar [not null] 
   last_name varchar [not null]
   mail varchar [not null, unique]
   phone varchar [not null, unique]
@@ -167,19 +187,48 @@ ref account_role: role.id < account_role.role_id
 
 table student {
   id integer [pk, increment]
-  training_group_id integer [not null]
-  parent_id integer
-  birth_year year
-  date_of_departure date
+  first_name varchar [not null] 
+  last_name varchar [not null]
+  parent_id integer [not null]
+  birth_year smallint [not null]
 }
 
-table student_group {
-  training_group_id integer [not null]
+ref ref_parent_student: student.parent_id > account.id
+
+table lesson {
+  id integer [pk, increment]
+  assignment_id integer [not null]
+  lesson_status_id integer [not null]
+  lesson_date date [not null]
+  comment varchar
+  slot_id integer [not null]
+  room_id integer [not null]
+}
+
+ref assignment_lesson: assignment.id < lesson.assignment_id
+ref slot_lesson: slot.id < lesson.slot_id
+ref room_lesson: room.id < lesson.room_id
+ref lesson_status_lesson: lesson_status.id < lesson.lesson_status_id
+
+table lesson_status {
+  id integer [pk, increment]
+  name varchar [not null, unique]
+}
+
+table attendance {
+  lesson_id integer [not null]
   student_id integer [not null]
+  attendance_status_id integer [not null]
   indexes {
-    (training_group_id, student_id) [pk]
+    (lesson_id, student_id) [pk]
   }
 }
 
-ref ref_parent_student: student.parent_id >? account.id
-ref ref_student_group: student.id < student_group.student_id
+ref lesson_attendance: lesson.id < attendance.lesson_id
+ref student_attendance: student.id < attendance.student_id
+ref attendance_attendance_status: attendance_status.id < attendance.attendance_status_id
+
+table attendance_status {
+  id integer [pk, increment]
+  name varchar [not null, unique]
+}
