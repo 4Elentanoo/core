@@ -1,3 +1,4 @@
+-- 1
 CREATE OR REPLACE VIEW v_week_schedule AS
 select s.day_of_week                               as day_of_week,
        s.start_time                                as start_time,
@@ -17,4 +18,20 @@ join account as ac            on ac.id = t.account_id
 order by s.day_of_week, s.start_time, r.name, r.id;
 
 COMMENT ON VIEW v_week_schedule IS 'Расписание недели: группа, тренер, зал, пара';
+
+-- 2
+create or replace view v_group_fill as
+select tg.name                                as group_name,
+       tg.is_active                           as is_active,
+       tg.max_students                        as max_students,
+       count(sg.student_id)                   as enrolled,
+       tg.max_students - count(sg.student_id) as free_places
+from training_group as tg
+left join student_group as sg
+       on sg.training_group_id = tg.id
+      and sg.end_date is null
+group by tg.id
+order by free_places, group_name;
+
+COMMENT ON VIEW v_group_fill IS 'Заполненность групп: записано сейчас (открытые членства) и свободные места. Включает закрытые группы';
 
