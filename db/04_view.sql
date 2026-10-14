@@ -35,3 +35,18 @@ order by free_places, group_name;
 
 COMMENT ON VIEW v_group_fill IS 'Заполненность групп: записано сейчас (открытые членства) и свободные места. Включает закрытые группы';
 
+create or replace view v_student_attendance as
+select concat_ws(' ', s.last_name, s.first_name)                as student,
+       count(*)                                                 as total,
+       count(*) filter (where ast.name = 'присутствовал')       as present,
+       count(*) filter (where ast.name = 'отсутствовал')        as absent,
+       count(*) filter (where ast.name = 'опоздал')             as late,
+       round(100.0 * count(*) filter (where ast.name = 'присутствовал')
+             / count(*), 1)                                     as present_pct
+from student as s
+join attendance as a          on a.student_id = s.id
+join attendance_status as ast on ast.id = a.attendance_status_id
+group by s.id
+order by present_pct, student, s.id;
+
+comment on view v_student_attendance is 'Посещаемость учеников: всего отметок, присутствия, пропуски, опоздания, процент присутствия';
