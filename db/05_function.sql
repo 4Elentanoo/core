@@ -76,7 +76,7 @@ LANGUAGE sql
 STABLE
 AS $$
     SELECT r.capacity >= tg.max_students
-           AND NOT EXISTS (                      -- нет такого требуемого оборудования...
+           AND NOT EXISTS (                      -- нет такого требуемого оборудования
                  SELECT 1
                  FROM section_equipment AS se
                  WHERE se.type_sport_id = tg.type_sport_id
